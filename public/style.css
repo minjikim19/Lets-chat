@@ -4,11 +4,24 @@
 
 .header {
   background-color: lightcoral;
+  align-content: center;
   color: white;
   max-width: 960px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
   margin-left: auto;
   margin-right: auto;
-  text-align: center;
+  margin-bottom: 10px;
+}
+
+.header h1 {
+  margin: 0;
+}
+
+.header i {
+  font-size: 30px;
 }
 
 body {
@@ -26,18 +39,68 @@ body {
 
 .userholder {
   background-color: rgba(240, 128, 128, 0.7);
-  height: 80vh;
+  height: 85vh;
   text-align: center;
-  color: white;
 }
 
 h2 {
-  margin-top: 1vh;
+  margin: 0;
+  padding-top: 1vh;
+  color: white;
+  text-align: center;
+}
+
+.userholder h2 {
+  background-color: #ed6969;
 }
 
 .msgholder {
   background-color: rgba(195, 230, 252, 0.7);
+  height: 85vh;
+}
+
+/* .msgholder h2 {
+  display: table-cell;
+} */
+
+.msgheader .userdropdown {
+  display: none;
+}
+
+.msgheader {
+  background-color: #99cfe0;
+  display: table;
+  width: 100%;
+}
+
+.msglog {
+  overflow-y: scroll;
   height: 80vh;
+}
+
+.userholderdrop {
+  display: none;
+  position: absolute;
+  overflow: auto;
+  z-index: 999;
+}
+
+/* li {
+  font-size: 50px;
+} */
+
+/* .msglog::-webkit-scrollbar-track {
+  background: #f1f1f1;
+} */
+
+/* Handle */
+.msglog::-webkit-scrollbar-thumb {
+  background: #99cfe0;
+}
+
+/* Handle on hover */
+.msglog::-webkit-scrollbar-thumb:hover {
+  background: #4eacc9;
 }
 
 .type {
@@ -84,6 +147,69 @@ form button {
   background: #eee;
 } */
 
-/* for later */
-@media (max-width: 960px) {
+.unselectable {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* for mobile or small screen */
+@media (max-width: 400px) {
+  .msgholder h2 {
+    display: table-cell;
+  }
+
+  .msgheader .userdropdown {
+    display: table-cell;
+  }
+
+  .msgheader i {
+    color: white;
+    text-align: center;
+    padding-left: 3px;
+  }
+
+  .msgholder i:hover {
+    color: lightgray;
+  }
+
+  .userholder {
+    display: none;
+  }
+
+  .container {
+    display: block;
+  }
+
+  .msgholder {
+    width: 100%;
+  }
+
+  button {
+    border: none;
+    background-color: rgba(0, 0, 0, 0);
+  }
+
+  .msgholder h2 {
+    padding-right: 30px;
+  }
+
+  .userholderdrop {
+    background-color: rgba(240, 128, 128, 0.7);
+    height: 70vh;
+    width: 80%;
+    text-align: center;
+  }
+
+  .userholderdrop h2 {
+    background-color: #ed6969;
+    display: block;
+  }
+
+  .show {
+    display: block;
+  }
 }

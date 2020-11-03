@@ -8,19 +8,35 @@
       href="https://fonts.googleapis.com/css2?family=Hind+Siliguri&display=swap"
       rel="stylesheet"
     />
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
   <body>
     <div class="header">
-      <h1>Let's Chat!</h1>
+      <i class="fas fa-comment"></i>
+      <h1 class="unselectable">Let's Chat!</h1>
     </div>
     <div class="container">
       <div class="userholder">
-        <h2>Users</h2>
+        <h2 class="unselectable">Online Users</h2>
         <ul id="users"></ul>
       </div>
       <div class="msgholder">
-        <ul id="messages"></ul>
+        <div class="msgheader">
+          <div class="userdropdown">
+            <button onclick="openUser()" class="dropbtn">
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
+            <div class="userholderdrop" id="userdown">
+              <h2 class="unselectable">Online Users</h2>
+              <ul id="users"></ul>
+            </div>
+          </div>
+          <h2 class="unselectable">Message Log</h2>
+        </div>
+        <div id="msg" class="msglog">
+          <ul id="messages"></ul>
+        </div>
       </div>
     </div>
     <div class="type">
@@ -30,19 +46,6 @@
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-    <script>
-      $(function () {
-        var socket = io();
-        $("form").submit(function (e) {
-          e.preventDefault(); // prevents page reloading
-          socket.emit("chat message", $("#m").val());
-          $("#m").val("");
-          return false;
-        });
-        socket.on("chat message", function (msg) {
-          $("#messages").append($("<li>").text(msg));
-        });
-      });
-    </script>
+    <script src="script.js"></script>
   </body>
 </html>
