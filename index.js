@@ -1,4 +1,4 @@
-var express = require('express');
+var express = require("express");
 var app = express();
 var http = require("http").createServer(app);
 var io = require("socket.io")(http);
@@ -10,29 +10,33 @@ app.get("/", (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  console.log("a user connected");
-  io.emit("chat message", "user connected!");
+  // Find user in local storage
+  // Else, create random username and add it to local storage
+  // Add user to online users list
+  var username = "user" + Math.floor(Math.random() * 10000000);
+  console.log(socket.id);
+  console.log(username + " connected");
+  io.emit("connection message", "Hi, " + username + "!");
   socket.on("disconnect", () => {
-    console.log("user disconnected");
-    io.emit("chat message", "user disconnected!");
+    console.log(username + "disconnected");
+    io.emit("connection message", "Bye, " + username + "!");
   });
-});
 
-io.on("connection", (socket) => {
   socket.on("chat message", (msg) => {
-    console.log("message: " + msg);
-    io.emit("chat message", msg);
-    //manageScroll();
+    if (msg.length > 0) {
+      const date = new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      console.log("message: " + msg);
+      io.emit("chat message", username, msg, date);
+    }
   });
 });
 
 io.emit("some event", {
   someProperty: "some value",
   otherProperty: "other value",
-});
-
-io.on("connection", (socket) => {
-  socket.broadcast.emit("hi");
 });
 
 http.listen(3000, () => {
