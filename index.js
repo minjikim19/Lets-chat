@@ -14,12 +14,11 @@ io.on("connection", (socket) => {
   // Else, create random username and add it to local storage
   // Add user to online users list
   var username = "user" + Math.floor(Math.random() * 10000000);
-  console.log(socket.id);
   console.log(username + " connected");
-  io.emit("connection message", "Hi, " + username + "!");
+  io.emit("connected message", "Hi, " + username + "!", username);
   socket.on("disconnect", () => {
     console.log(username + "disconnected");
-    io.emit("connection message", "Bye, " + username + "!");
+    io.emit("disconnected message", "Bye, " + username + "!", username);
   });
 
   socket.on("chat message", (msg) => {

@@ -71,8 +71,15 @@ h3 {
 .chatmsg p {
   margin: 0;
   font-weight: bold;
-  text-shadow: -1px -1px 0 #FFFFFF, 1px -1px 0 #FFFFFF, -1px 1px 0#FFFFFF,
-    1px 1px 0 #FFFFFF;
+  /* text-shadow: -1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0#FFFFFF,
+    1px 1px 0 #ffffff; */
+}
+
+.cmdmsg p {
+  margin: 0;
+  color: red;
+  font-weight: bold;
+  background-color: #99cfe0;
 }
 
 /* .msgholder h2 {
@@ -159,6 +166,19 @@ form button {
   padding: 5px 10px;
 }
 
+#users {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  font-size: large;
+  font-weight: bold;
+  /* text-shadow: -1px -1px 0 #ffffff, 1px -1px 0 #ffffff, -1px 1px 0#FFFFFF,
+    1px 1px 0 #ffffff; */
+}
+
+#users p {
+  margin: 0;
+}
 /* 
 #messages li:nth-child(odd) {
   background: #eee;
