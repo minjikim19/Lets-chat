@@ -17,19 +17,16 @@ class User {
 }
 
 var userList = [];
-var msgList = [];
+var chatlog = [];
 
 io.on("connection", (socket) => {
   // Find user in local storage
-
   // Else, create random username and add it to local storage
-
   var username = "user" + Math.floor(Math.random() * 10000000);
   while (userExists(username)) {
     username = "user" + Math.floor(Math.random() * 10000000);
   }
   var color = "#000000";
-
   var user = new User(username, color);
 
   // Add user to online users list
@@ -37,14 +34,29 @@ io.on("connection", (socket) => {
   console.log(socket.id);
   console.log(user.name + " connected");
   console.log(userList);
-  io.emit("connected message", user.name);
+  io.to(socket.id).emit("update chatlog", chatlog);
+  //io.emit("update chatlog", chatlog);
+
+  var welcome =
+    '<li class="conmsg"><h3><u><b>' + "Hi, " + user.name + "</b></u></h3></li>";
+  chatlog = manageLogSize(chatlog);
+  chatlog.push(welcome);
+  console.log(chatlog);
+
+  io.emit("connected message", welcome);
   io.emit("update user list", userList);
 
   socket.on("disconnect", () => {
     userList = userList.filter((x) => x.name != user.name);
     console.log(user.name + "disconnected");
-    console.log(userList);
-    io.emit("disconnected message", user.name);
+    const _msg =
+      '<li class="conmsg"><h3><u><b>' +
+      "Bye, " +
+      username +
+      "</b></u></h3></li>";
+    chatlog = manageLogSize(chatlog);
+    chatlog.push(_msg);
+    io.emit("connected message", _msg);
     io.emit("update user list", userList);
   });
 
@@ -59,19 +71,25 @@ io.on("connection", (socket) => {
       if (command === "help") {
         _msg =
           '<li class = "cmdmsg"><p>To change your color, type "/color RRGGBB".</p><p>To change your name, type "/name newname".</p></li>';
+        io.to(socket.id).emit("chat message", _msg);
       } else if (command === "color") {
         _msg = '<li class = "cmdmsg"><p>Changed your color!</p></li>';
+        io.to(socket.id).emit("chat message", _msg);
       } else if (command === "name") {
         _msg = '<li class = "cmdmsg"><p>Changed your username!</p></li>';
+        io.to(socket.id).emit("chat message", _msg);
       } else if (command === "colerr") {
         _msg =
           '<li class = "cmdmsg"><p>ERROR: Please type valid color hex value!</p></li>';
+        io.to(socket.id).emit("chat message", _msg);
       } else if (command === "namerr") {
         _msg =
           '<li class = "cmdmsg"><p>ERROR: The chosen name is taken. Please try with new name!</p></li>';
+        io.to(socket.id).emit("chat message", _msg);
       } else if (command === "err") {
         _msg =
           '<li class = "cmdmsg"><p>ERROR: Please type valid command!</p><p>To see the available commands, type "/help"</p></li>';
+        io.to(socket.id).emit("chat message", _msg);
       } else {
         _msg =
           '<li class="chatmsg ' +
@@ -83,9 +101,12 @@ io.on("connection", (socket) => {
           "] </span><span><b>" +
           mapEmoji(msg) +
           "</b></span></li>";
+        chatlog = manageLogSize(chatlog);
+        chatlog.push(_msg);
+        console.log(chatlog);
+        io.emit("chat message", _msg);
       }
       //console.log(userList);
-      io.emit("chat message", _msg);
       io.emit("update user list", userList);
     }
   });
@@ -96,6 +117,13 @@ io.on("connection", (socket) => {
     ":(": "&#x1f641",
     ":0": "&#x1f62e",
   };
+
+  function manageLogSize(log) {
+    if (log.length > 200) {
+      log.shift();
+    }
+    return log;
+  }
 
   function mapEmoji(msg) {
     var newMsg = msg;

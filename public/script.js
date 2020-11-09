@@ -7,23 +7,8 @@ $(function () {
     return false;
   });
 
-  socket.on("connected message", function (username) {
-    const _msg =
-      '<li class="conmsg"><h3><u><b>' +
-      "Hi, " +
-      username +
-      "</b></u></h3></li>";
-    $("#messages").append(_msg);
-    manageScroll();
-  });
-
-  socket.on("disconnected message", function (username) {
-    const _msg =
-      '<li class="conmsg"><h3><u><b>' +
-      "Bye, " +
-      username +
-      "</b></u></h3></li>";
-    $("#messages").append(_msg);
+  socket.on("connected message", function (msg) {
+    $("#messages").append(msg);
     manageScroll();
   });
 
@@ -51,6 +36,7 @@ $(function () {
 
   socket.on("update user list", function (userList) {
     $("#users").empty();
+    $("#userdrop").empty();
     userList.forEach((user) => {
       const _user =
         '<li class="' +
@@ -65,6 +51,7 @@ $(function () {
       style.innerHTML = "." + user.name + " { color: " + user.color + "; }";
       document.head.appendChild(style);
       $("#users").append(_user);
+      $("#userdrop").append(_user);
     });
   });
 
@@ -74,22 +61,27 @@ $(function () {
     style.innerHTML = "." + user.name + " { color: " + user.color + "; }";
     document.head.appendChild(style);
   });
+
+  socket.on("update chatlog", function (log) {
+    log.forEach((x) => $("#messages").append(x));
+    manageScroll();
+  });
 });
 
 const out = document.getElementById("msg");
 
 function manageScroll() {
-  console.log(out);
+  //console.log(out);
   const isScrolledToBottom =
     out.scrollHeight - out.scrollTop <= out.clientHeight;
-  console.log(isScrolledToBottom);
+  //console.log(isScrolledToBottom);
   //console.log("scrolltop is: " + out.scrollTop);
   //console.log("clientheight is: " + out.clientHeight);
   //console.log("scrollheight is: " + out.scrollHeight);
   // scroll to bottom if isScrolledToBottom is true
   if (!isScrolledToBottom) {
     out.scrollTop = out.scrollHeight + out.scrollTop;
-    console.log("new scrolltop is: " + out.scrollTop);
+    //console.log("new scrolltop is: " + out.scrollTop);
   }
 }
 
