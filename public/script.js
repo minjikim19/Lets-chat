@@ -6,129 +6,77 @@ $(function () {
     $("#m").val("");
     return false;
   });
-  socket.on("connected message", function (msg, username) {
-    const _msg = '<li class="conmsg"><h3><u><b>' + msg + "</b></u></h3></li>";
-    const _user = '<li id="' + username + '"><p>' + username + "</p></li>";
+
+  socket.on("connected message", function (username) {
+    const _msg =
+      '<li class="conmsg"><h3><u><b>' +
+      "Hi, " +
+      username +
+      "</b></u></h3></li>";
     $("#messages").append(_msg);
-    $("#users").append(_user);
-    store(username);
     manageScroll();
   });
-  socket.on("disconnected message", function (msg, username) {
-    const _msg = '<li class="conmsg"><h3><u><b>' + msg + "</b></u></h3></li>";
+
+  socket.on("disconnected message", function (username) {
+    const _msg =
+      '<li class="conmsg"><h3><u><b>' +
+      "Bye, " +
+      username +
+      "</b></u></h3></li>";
     $("#messages").append(_msg);
-    $("#" + username).empty();
-    store(username);
     manageScroll();
   });
-  socket.on("chat message", function (username, msg, time) {
-    var command = isCommand(msg, username);
-    if (command === "help") {
-      const _msg =
-        '<li class = "cmdmsg"><p>To change your color, type "/color RRGGBB".</p><p>To change your name, type "/name newname".</p></li>';
-      $("#messages").append(_msg);
-    } else if (command === "color") {
-      const _msg = '<li class = "cmdmsg"><p>Changed your color!</p></li>';
-      $("#messages").append(_msg);
-    } else if (command === "name") {
-      const _msg = '<li class = "cmdmsg"><p>Changed your username!</p></li>';
-      $("#messages").append(_msg);
-    } else if (command === "colerr") {
-      const _msg =
-        '<li class = "cmdmsg"><p>ERROR: Please type valid color hex value</p></li>';
-      $("#messages").append(_msg);
-    } else if (command === "err") {
-      const _msg =
-        '<li class = "cmdmsg"><p>ERROR: Please type valid command!</p><p>To see the available commands, type "/help"</p></li>';
-      $("#messages").append(_msg);
-    } else {
-      const _msg =
-        '<li class="chatmsg ' +
-        username +
-        '"><p>' +
-        username +
-        "</p><span> [" +
-        time +
-        "] </span><span><b>" +
-        mapEmoji(msg) +
-        "</b></span></li>";
-      $("#messages").append(_msg);
+
+  socket.on("chat message", function (msg) {
+    $("#messages").append(msg);
+    manageScroll();
+  });
+
+  socket.on("update user name", function (oldUsername, newUsername) {
+    var allNames = document.getElementsByClassName(oldUsername);
+    while (allNames.length) {
+      allNames[0].innerHTML = allNames[0].innerHTML.replace(
+        oldUsername,
+        newUsername
+      );
+      allNames[0].classList.add(newUsername);
+      allNames[0].classList.remove(oldUsername);
     }
-    store(username);
-    manageScroll();
+    // Update css style
+    document.head.innerHTML = document.head.innerHTML.replace(
+      oldUsername,
+      newUsername
+    );
+  });
+
+  socket.on("update user list", function (userList) {
+    $("#users").empty();
+    userList.forEach((user) => {
+      const _user =
+        '<li class="' +
+        user.name +
+        '" id="' +
+        user.name +
+        '"><p>' +
+        user.name +
+        "</p></li>";
+      var style = document.createElement("style");
+      style.class;
+      style.innerHTML = "." + user.name + " { color: " + user.color + "; }";
+      document.head.appendChild(style);
+      $("#users").append(_user);
+    });
+  });
+
+  socket.on("update color", function (user) {
+    var style = document.createElement("style");
+    style.class;
+    style.innerHTML = "." + user.name + " { color: " + user.color + "; }";
+    document.head.appendChild(style);
   });
 });
+
 const out = document.getElementById("msg");
-
-function isHex(str) {
-  return /^[A-F0-9]+$/i.test(str);
-}
-
-function changeColor(username, col) {
-  var allNames = document.getElementsByClassName(username);
-  console.log(allNames);
-  for (i = 0; i < allNames.length; i++) {
-    allNames[i].style.color = "#" + col;
-  }
-}
-
-function changeName(username, newName) {
-  // change the classname, things in html, the username itself
-  // var allNames = document.getElementsByClassName(username);
-  // console.log(allNames);
-  // for (i = 0; i < allNames.length; i++) {
-  //   allNames[i].className = newName;
-  //   var str = document.innerHTML;
-  //   var res = str.replace(username, newName);
-  //   document.innerHTML = res;
-  // }
-  console.log(username);
-  console.log(document.body.innerHTML);
-  document.body.innerHTML = document.body.innerHTML.replace(username, newName);
-  username = newName;
-  console.log(username);
-}
-
-function isCommand(msg, username) {
-  if (msg.startsWith("/")) {
-    if (msg.startsWith("help", 1)) {
-      return "help";
-    } else if (msg.startsWith("color", 1)) {
-      var col = msg.slice(7);
-      console.log(col);
-      if (col.length === 6 && isHex(col)) {
-        changeColor(username, col);
-        return "color";
-      } else {
-        return "colerr";
-      }
-    } else if (msg.startsWith("name", 1)) {
-      var newName = msg.slice(6);
-      //check if the username is unique
-      changeName(username, newName);
-      return "name";
-    } else {
-      return "err";
-    }
-  }
-  return false;
-}
-
-const mapping = {
-  ":)": "&#x1f642",
-  ":(": "&#x1f641",
-  ":0": "&#x1f62e",
-};
-
-function mapEmoji(msg) {
-  var newMsg = msg;
-  for (const [key, value] of Object.entries(mapping)) {
-    if (msg.includes(key)) {
-      newMsg = msg.replace(key, value);
-    }
-  }
-  return newMsg;
-}
 
 function manageScroll() {
   console.log(out);
@@ -150,15 +98,4 @@ function openUser() {
   var element = document.getElementById("userdown");
   element.classList.toggle("show");
   //console.log(document.getElementById("userdown"));
-}
-
-function store(username) {
-  var storage = localStorage["user"];
-  if (!storage) {
-    storage = username;
-    localStorage["user"] = storage;
-  }
-
-  var divName = document.getElementById("user");
-  divName.innerHTML = localStorage["user"];
 }

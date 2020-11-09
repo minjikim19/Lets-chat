@@ -9,33 +9,155 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
+class User {
+  constructor(name, color) {
+    this.name = name;
+    this.color = color;
+  }
+}
+
+var userList = [];
+var msgList = [];
+
 io.on("connection", (socket) => {
   // Find user in local storage
+
   // Else, create random username and add it to local storage
-  // Add user to online users list
+
   var username = "user" + Math.floor(Math.random() * 10000000);
-  console.log(username + " connected");
-  io.emit("connected message", "Hi, " + username + "!", username);
+  while (userExists(username)) {
+    username = "user" + Math.floor(Math.random() * 10000000);
+  }
+  var color = "#000000";
+
+  var user = new User(username, color);
+
+  // Add user to online users list
+  userList.push(user);
+  console.log(socket.id);
+  console.log(user.name + " connected");
+  console.log(userList);
+  io.emit("connected message", user.name);
+  io.emit("update user list", userList);
+
   socket.on("disconnect", () => {
-    console.log(username + "disconnected");
-    io.emit("disconnected message", "Bye, " + username + "!", username);
+    userList = userList.filter((x) => x.name != user.name);
+    console.log(user.name + "disconnected");
+    console.log(userList);
+    io.emit("disconnected message", user.name);
+    io.emit("update user list", userList);
   });
 
   socket.on("chat message", (msg) => {
     if (msg.length > 0) {
-      const date = new Date().toLocaleTimeString([], {
+      var command = isCommand(msg, user);
+      var _msg = msg;
+      const time = new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       });
-      console.log("message: " + msg);
-      io.emit("chat message", username, msg, date);
+      if (command === "help") {
+        _msg =
+          '<li class = "cmdmsg"><p>To change your color, type "/color RRGGBB".</p><p>To change your name, type "/name newname".</p></li>';
+      } else if (command === "color") {
+        _msg = '<li class = "cmdmsg"><p>Changed your color!</p></li>';
+      } else if (command === "name") {
+        _msg = '<li class = "cmdmsg"><p>Changed your username!</p></li>';
+      } else if (command === "colerr") {
+        _msg =
+          '<li class = "cmdmsg"><p>ERROR: Please type valid color hex value!</p></li>';
+      } else if (command === "namerr") {
+        _msg =
+          '<li class = "cmdmsg"><p>ERROR: The chosen name is taken. Please try with new name!</p></li>';
+      } else if (command === "err") {
+        _msg =
+          '<li class = "cmdmsg"><p>ERROR: Please type valid command!</p><p>To see the available commands, type "/help"</p></li>';
+      } else {
+        _msg =
+          '<li class="chatmsg ' +
+          user.name +
+          '"><p>' +
+          user.name +
+          "</p><span> [" +
+          time +
+          "] </span><span><b>" +
+          mapEmoji(msg) +
+          "</b></span></li>";
+      }
+      //console.log(userList);
+      io.emit("chat message", _msg);
+      io.emit("update user list", userList);
     }
   });
-});
 
-io.emit("some event", {
-  someProperty: "some value",
-  otherProperty: "other value",
+  // Functions
+  const mapping = {
+    ":)": "&#x1f642",
+    ":(": "&#x1f641",
+    ":0": "&#x1f62e",
+  };
+
+  function mapEmoji(msg) {
+    var newMsg = msg;
+    for (const [key, value] of Object.entries(mapping)) {
+      if (msg.includes(key)) {
+        newMsg = msg.replace(key, value);
+      }
+    }
+    return newMsg;
+  }
+
+  function changeName(oldUsername, newUsername) {
+    user.name = newUsername;
+    //console.log(userList);
+    // userList.splice(userList.indexOf(oldUsername), 1, newUsername);
+    io.emit("update user name", oldUsername, newUsername);
+  }
+
+  function changeColor(col) {
+    user.color = "#" + col;
+    //console.log(userList);
+    io.emit("update color", user);
+  }
+
+  function isHex(str) {
+    return /^[A-F0-9]+$/i.test(str);
+  }
+
+  function userExists(newName) {
+    //console.log("im here");
+    return userList.some(function (el) {
+      return el.name === newName;
+    });
+  }
+
+  function isCommand(msg, user) {
+    if (msg.startsWith("/")) {
+      if (msg.startsWith("help", 1)) {
+        return "help";
+      } else if (msg.startsWith("color", 1)) {
+        var col = msg.slice(7);
+        if (col.length === 6 && isHex(col)) {
+          changeColor(col);
+          return "color";
+        } else {
+          return "colerr";
+        }
+      } else if (msg.startsWith("name", 1)) {
+        var newName = msg.slice(6);
+        if (userExists(newName)) {
+          //console.log("returned true");
+          return "namerr";
+        }
+        //console.log("returned false");
+        changeName(user.name, newName);
+        return "name";
+      } else {
+        return "err";
+      }
+    }
+    return false;
+  }
 });
 
 http.listen(3000, () => {
