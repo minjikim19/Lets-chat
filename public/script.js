@@ -17,8 +17,10 @@ $(function () {
     manageScroll();
   });
 
-  socket.on("update user name", function (oldUsername, newUsername) {
+  socket.on("update user name", function (oldUsername, newUsername, userId) {
     var allNames = document.getElementsByClassName(oldUsername);
+    var titleNames = document.getElementsByClassName(userId);
+    console.log(titleNames);
     while (allNames.length) {
       allNames[0].innerHTML = allNames[0].innerHTML.replace(
         oldUsername,
@@ -27,6 +29,13 @@ $(function () {
       allNames[0].classList.add(newUsername);
       allNames[0].classList.remove(oldUsername);
     }
+    for (var i = 0; i < titleNames.length; i++) {
+      console.log(titleNames[i].innerHTML.search(oldUsername));
+      titleNames[i].innerHTML = titleNames[i].innerHTML.replace(
+        oldUsername,
+        newUsername
+      );
+    }
     // Update css style
     document.head.innerHTML = document.head.innerHTML.replace(
       oldUsername,
@@ -34,25 +43,46 @@ $(function () {
     );
   });
 
-  socket.on("update user list", function (userList) {
+  socket.on("update user list", function (userList, socketID) {
     $("#users").empty();
     $("#userdrop").empty();
+    // Add all users to list
     userList.forEach((user) => {
-      const _user =
-        '<li class="' +
-        user.name +
-        '" id="' +
-        user.name +
-        '"><p>' +
-        user.name +
-        "</p></li>";
+      if (user.isConnected) {
+        var style = document.createElement("style");
+        style.class;
+        style.innerHTML = "." + user.name + " { color: " + user.color + "; }";
+        document.head.appendChild(style);
+        if (user.socketId === socketID) {
+          const me =
+            '<li class="' +
+            user.name +
+            " current" +
+            '"><p>' +
+            user.name +
+            "</p></li>";
+          $("#users").append(me);
+          $("#userdrop").append(me);
+        } else {
+          const me =
+            '<li class="' + user.name + '"><p>' + user.name + "</p></li>";
+          $("#users").append(me);
+          $("#userdrop").append(me);
+        }
+      }
+
+      // Add style for each user
       var style = document.createElement("style");
       style.class;
-      style.innerHTML = "." + user.name + " { color: " + user.color + "; }";
+      style.innerHTML = ".current" + " { background-color: " + "#f39797; }";
       document.head.appendChild(style);
-      $("#users").append(_user);
-      $("#userdrop").append(_user);
     });
+
+    // Add current user style
+    var style = document.createElement("style");
+    style.class;
+    style.innerHTML = ".current" + " { background-color: " + "#f39797; }";
+    document.head.appendChild(style);
   });
 
   socket.on("update color", function (user) {
@@ -66,28 +96,32 @@ $(function () {
     log.forEach((x) => $("#messages").append(x));
     manageScroll();
   });
+
+  socket.on("update chat msg", function (user) {
+    var elements = document.getElementsByClassName("chatmsg " + user.name);
+    for (var i = 0; i < elements.length; i++) {
+      elements[i].classList.add("currentmsg");
+    }
+    // Add current user style
+    var style = document.createElement("style");
+    style.class;
+    style.innerHTML = ".currentmsg" + " { font-weight: " + "bold; }";
+    document.head.appendChild(style);
+  });
 });
 
 const out = document.getElementById("msg");
 
 function manageScroll() {
-  //console.log(out);
   const isScrolledToBottom =
     out.scrollHeight - out.scrollTop <= out.clientHeight;
-  //console.log(isScrolledToBottom);
-  //console.log("scrolltop is: " + out.scrollTop);
-  //console.log("clientheight is: " + out.clientHeight);
-  //console.log("scrollheight is: " + out.scrollHeight);
   // scroll to bottom if isScrolledToBottom is true
   if (!isScrolledToBottom) {
     out.scrollTop = out.scrollHeight + out.scrollTop;
-    //console.log("new scrolltop is: " + out.scrollTop);
   }
 }
 
 function openUser() {
-  //console.log(document.getElementById("userdown"));
   var element = document.getElementById("userdown");
   element.classList.toggle("show");
-  //console.log(document.getElementById("userdown"));
 }

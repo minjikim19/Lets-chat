@@ -2,15 +2,33 @@ var express = require("express");
 var app = express();
 var http = require("http").createServer(app);
 var io = require("socket.io")(http);
+var cookieParser = require("cookie-parser");
+var userId;
+
+app.use(cookieParser());
+
+app.use(function (req, res, next) {
+  var cookie = req.cookies.cookieName;
+  if (cookie === undefined) {
+    var randomNumber = Math.random().toString();
+    randomNumber = randomNumber.substring(2, randomNumber.length);
+    res.cookie("cookieName", randomNumber, { maxAge: 900000, httpOnly: true });
+    console.log("cookie created successfully");
+    userId = randomNumber;
+  } else {
+    console.log("cookie exists", cookie);
+    userId = cookie;
+  }
+  next();
+});
 
 app.use(express.static("public"));
 
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/index.html");
-});
-
 class User {
-  constructor(name, color) {
+  constructor(socketId, userId, isConnected, name, color) {
+    this.socketId = socketId;
+    this.userId = userId;
+    this.isConnected = isConnected;
     this.name = name;
     this.color = color;
   }
@@ -22,42 +40,68 @@ var chatlog = [];
 io.on("connection", (socket) => {
   // Find user in local storage
   // Else, create random username and add it to local storage
-  var username = "user" + Math.floor(Math.random() * 10000000);
-  while (userExists(username)) {
-    username = "user" + Math.floor(Math.random() * 10000000);
+  var found = false;
+  var index;
+  console.log("before userlist: ", userList);
+  console.log(chatlog);
+  for (var i = 0; i < userList.length; i++) {
+    if (userList[i].userId === userId) {
+      console.log(userList[i]);
+      found = true;
+      index = i;
+      break;
+    }
   }
-  var color = "#000000";
-  var user = new User(username, color);
 
-  // Add user to online users list
-  userList.push(user);
-  console.log(socket.id);
+  if (found) {
+    var username = userList[index].name;
+    var color = userList[index].color;
+    var user = new User(socket.id, userId, true, username, color);
+    userList[index] = user;
+  } else {
+    var username = "user" + Math.floor(Math.random() * 10000000);
+    while (userExists(username)) {
+      username = "user" + Math.floor(Math.random() * 10000000);
+    }
+    var color = "#000000";
+    var user = new User(socket.id, userId, true, username, color);
+    userList.push(user);
+  }
+
   console.log(user.name + " connected");
-  console.log(userList);
   io.to(socket.id).emit("update chatlog", chatlog);
-  //io.emit("update chatlog", chatlog);
-
+  io.to(socket.id).emit("update chat msg", user);
   var welcome =
-    '<li class="conmsg"><h3><u><b>' + "Hi, " + user.name + "</b></u></h3></li>";
+    '<li class="conmsg ' + user.userId + '"><h3><u><b>' + "Hi, " + user.name + "</b></u></h3></li>";
   chatlog = manageLogSize(chatlog);
   chatlog.push(welcome);
-  console.log(chatlog);
 
   io.emit("connected message", welcome);
-  io.emit("update user list", userList);
-
+  for (const socketID in io.sockets.sockets) {
+    io.emit("update color", user);
+    io.to(socketID).emit("update user list", userList, socketID);
+  }
   socket.on("disconnect", () => {
-    userList = userList.filter((x) => x.name != user.name);
-    console.log(user.name + "disconnected");
+    console.log(user.name + " disconnected");
     const _msg =
-      '<li class="conmsg"><h3><u><b>' +
+      '<li class="conmsg ' + user.userId + '"><h3><u><b>' +
       "Bye, " +
-      username +
+      user.name +
       "</b></u></h3></li>";
     chatlog = manageLogSize(chatlog);
     chatlog.push(_msg);
     io.emit("connected message", _msg);
-    io.emit("update user list", userList);
+    console.log(
+      "User: " + userList.findIndex((element) => element.socketId === socket.id)
+    );
+    console.log(
+      userList[userList.findIndex((element) => element.socketId === socket.id)]
+        .isConnected
+    );
+    userList[userList.findIndex(element => element.socketId === socket.id)].isConnected = false;
+    for (const socketID in io.sockets.sockets) {
+      io.to(socketID).emit("update user list", userList, socketID);
+    }
   });
 
   socket.on("chat message", (msg) => {
@@ -98,16 +142,20 @@ io.on("connection", (socket) => {
           user.name +
           "</p><span> [" +
           time +
-          "] </span><span><b>" +
+          "] </span><span>" +
           mapEmoji(msg) +
-          "</b></span></li>";
+          "</span></li>";
         chatlog = manageLogSize(chatlog);
         chatlog.push(_msg);
         console.log(chatlog);
         io.emit("chat message", _msg);
+        for (const socketID in io.sockets.sockets) {
+          io.to(socketID).emit(
+            "update chat msg",
+            userList.find((element) => element.socketId === socketID)
+          );
+        }
       }
-      //console.log(userList);
-      io.emit("update user list", userList);
     }
   });
 
@@ -136,15 +184,31 @@ io.on("connection", (socket) => {
   }
 
   function changeName(oldUsername, newUsername) {
+    userList.forEach((x) => {
+      if (x.name === oldUsername) {
+        x.name = newUsername;
+      }
+    });
+    chatlog.forEach((x, i) => {
+      // find oldUsername => update it to newUsername
+      chatlog[i] = x.split(oldUsername).join(newUsername);
+    });
+    console.log("updated chatlog is: ", chatlog);
     user.name = newUsername;
-    //console.log(userList);
+    console.log("changed name: ", userList);
     // userList.splice(userList.indexOf(oldUsername), 1, newUsername);
-    io.emit("update user name", oldUsername, newUsername);
+    io.emit("update user name", oldUsername, newUsername, user.userId);
+    io.emit("update color", user);
   }
 
   function changeColor(col) {
+    userList.forEach((x) => {
+      if (x.name === user.name) {
+        x.color = "#" + col;
+      }
+    });
     user.color = "#" + col;
-    //console.log(userList);
+    console.log("changed color: ", userList);
     io.emit("update color", user);
   }
 
